@@ -23,6 +23,7 @@
 #include <mp2p_icp_filters/GetOrCreatePointLayer.h>
 #include <mrpt/containers/yaml.h>
 #include <mrpt/poses/CPose3D.h>
+#include <mrpt/version.h>
 
 IMPLEMENTS_MRPT_OBJECT(FilterTransformPointCloud, mp2p_icp_filters::FilterBase, mp2p_icp_filters)
 
@@ -96,12 +97,13 @@ void FilterTransformPointCloud::filter(mp2p_icp::metric_map_t& inOut) const
     const auto basePose  = mrpt::poses::CPose3D(params.pose);
     const auto appliedTf = params.invert_pose ? -basePose : basePose;
 
-    // insertAnotherMap() transforms XYZ by the given pose and copies all
-    // other registered fields verbatim; view-direction unit vectors
-    // (view_x/y/z), if present, must be rotated too or they end up expressed
-    // in the wrong frame (see FilterMerge, which has the same requirement).
     outPc->insertAnotherMap(pcPtr, appliedTf);
+#if MRPT_VERSION < 0x030600  // 3.6.0
+    // Before MRPT 3.6.0, insertAnotherMap() copies view-direction unit vectors
+    // (view_x/y/z) verbatim, so they must be rotated here or they end up
+    // expressed in the wrong frame. From 3.6.0 it rotates them itself.
     mp2p_icp::rotateViewDirectionFields(*outPc, appliedTf);
+#endif
 
     MRPT_END
 }

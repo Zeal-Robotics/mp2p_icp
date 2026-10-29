@@ -56,11 +56,11 @@ bool warn_on_field_padding_mismatch(
  *  (`view_x`, `view_y`, `view_z`) of \a pts in place by the rotation part of
  *  \a tf, leaving the point coordinates untouched.
  *
- *  This must be called whenever a point cloud carrying these fields is
- *  re-expressed in a different frame of reference (e.g. via
- *  `CPointsMap::insertAnotherMap()`), since that operation transforms the XYZ
- *  coordinates but copies all other registered fields verbatim, which would
- *  otherwise leave the view vectors expressed in the wrong frame.
+ *  Before MRPT 3.6.0, `CPointsMap::insertAnotherMap()` transforms the XYZ
+ *  coordinates but copies all other registered fields verbatim, so a cloud
+ *  carrying these fields re-expressed that way needs this call to keep its
+ *  view vectors in the right frame. From 3.6.0 that operation rotates them
+ *  itself, and calling this after it rotates them twice.
  *
  *  If \a pts does not have all three fields, or \a tf is the identity
  *  transformation, this is a no-op.

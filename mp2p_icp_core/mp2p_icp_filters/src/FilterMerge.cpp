@@ -25,6 +25,7 @@
 #include <mrpt/maps/CSimplePointsMap.h>
 #include <mrpt/math/TPose3D.h>
 #include <mrpt/obs/CObservationPointCloud.h>
+#include <mrpt/version.h>
 
 IMPLEMENTS_MRPT_OBJECT(FilterMerge, mp2p_icp_filters::FilterBase, mp2p_icp_filters)
 
@@ -104,22 +105,15 @@ void FilterMerge::filter(mp2p_icp::metric_map_t& inOut) const
     // Copy the input layer here, as seen from the robot (hence the "-"):
     const auto robotPose = mrpt::poses::CPose3D(params.robot_pose);
 
-    // insertAnotherMap() transforms the point XYZ coordinates by the given
-    // pose, but copies all other registered fields verbatim. If the cloud
-    // carries view-direction unit vectors (view_x/y/z), those must be
-    // rotated too, or they will end up expressed in the wrong frame.
-    if (params.input_layer_in_local_coordinates)
-    {
-        const auto appliedTf = mrpt::poses::CPose3D::Identity();
-        pts->insertAnotherMap(pcPtr, appliedTf);
-        mp2p_icp::rotateViewDirectionFields(*pts, appliedTf);
-    }
-    else
-    {
-        const auto invRobotPose = -robotPose;
-        pts->insertAnotherMap(pcPtr, invRobotPose);
-        mp2p_icp::rotateViewDirectionFields(*pts, invRobotPose);
-    }
+    const auto appliedTf =
+        params.input_layer_in_local_coordinates ? mrpt::poses::CPose3D::Identity() : -robotPose;
+    pts->insertAnotherMap(pcPtr, appliedTf);
+#if MRPT_VERSION < 0x030600  // 3.6.0
+    // Before MRPT 3.6.0, insertAnotherMap() copies view-direction unit vectors
+    // (view_x/y/z) verbatim, so they must be rotated here or they end up
+    // expressed in the wrong frame. From 3.6.0 it rotates them itself.
+    mp2p_icp::rotateViewDirectionFields(*pts, appliedTf);
+#endif
 
     // Merge into map:
     out->insertObservation(obs, robotPose);
